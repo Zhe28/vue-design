@@ -5,7 +5,7 @@
 现在已经实现
 
 1. [x] 一个简单的响应式系统
-2. [ ] 完成分支切换和cleanup
+2. [x] 完成分支切换和cleanup
 3. [ ] 嵌套使用 effect
 4. [ ] 调度执行
 5. [ ] computed 与 lazy

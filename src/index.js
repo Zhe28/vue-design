@@ -13,11 +13,11 @@ function trigger(target, key, newValue) {
     return;
   }
 
-  const effectsFn = depsMap.get(key);
-  if (!effectsFn) {
+  const effects = depsMap.get(key);
+  if (!effects) {
     return;
   }
-  effectsFn.forEach((fn) => {
+  new Set(effects).forEach((fn) => {
     fn();
   });
 }
@@ -40,14 +40,15 @@ function track(target, key) {
     depsMap.set(key, (deps = new Set()));
   }
   deps.add(activeEffect);
+  activeEffect.deps.push(deps);
 }
 
 const objProxy = new Proxy(
   { ok: true },
   {
     set(target, p, newValue, receiver) {
-      const result = Reflect.set(target, p, newValue, receiver);
       trigger(target, p, newValue);
+      const result = Reflect.set(target, p, newValue, receiver);
       return result;
     },
     get(target, p, receiver) {
@@ -57,14 +58,26 @@ const objProxy = new Proxy(
   },
 );
 
-function effect(fn) {
-  activeEffect = fn;
-  fn();
+function cleanup(effectFn) {
+  effectFn.deps.forEach((effects) => {
+    effects.delete(effectFn);
+  });
+  effectFn.deps.length = 0;
 }
 
-effect(() => {
-  console.log("the objProxy.ok value has change. -->", objProxy.ok);
+function effect(fn) {
+  const effectFn = () => {
+    cleanup(effectFn);
+    activeEffect = effectFn;
+    fn();
+  };
+  effectFn.deps = [];
+  effectFn();
+}
+
+effect(function () {
+  objProxy.ok ? objProxy.text : "not set";
 });
-setTimeout(() => {
+setTimeout(function () {
   objProxy.ok = false;
 }, 3000);
