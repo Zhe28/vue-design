@@ -35,7 +35,7 @@ function track(target, key) {
   if (!depsMap) {
     bucket.set(target, (depsMap = new Map()));
   }
-  let deps = bucket.get(depsMap);
+  let deps = depsMap.get(key);
   if (!deps) {
     depsMap.set(key, (deps = new Set()));
   }
