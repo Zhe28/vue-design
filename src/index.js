@@ -1,4 +1,5 @@
 let activeEffect;
+const effectStack = [];
 let bucket = new WeakMap();
 
 /**
@@ -18,7 +19,10 @@ function trigger(target, key, newValue) {
     return;
   }
   new Set(effects).forEach((fn) => {
-    fn();
+    // avoid maximum call stack size exceeded
+    if (activeEffect !== fn) {
+      fn();
+    }
   });
 }
 
@@ -69,15 +73,33 @@ function effect(fn) {
   const effectFn = () => {
     cleanup(effectFn);
     activeEffect = effectFn;
+    effectStack.push(activeEffect);
     fn();
+    effectStack.pop();
+    activeEffect = effectStack[effectStack.length - 1];
   };
   effectFn.deps = [];
   effectFn();
 }
 
+// effect(function () {
+// objProxy.ok ? objProxy.text : "not set";
+// });
+// setTimeout(function () {
+// objProxy.ok = false;
+// }, 3000);
+
 effect(function () {
-  objProxy.ok ? objProxy.text : "not set";
+  console.log("this is effecfFn1.");
+  effect(function () {
+    console.log("this is effectFn2.");
+    let tmp2 = objProxy.ok;
+  });
+  let tmp = objProxy.ok;
 });
-setTimeout(function () {
-  objProxy.ok = false;
-}, 3000);
+
+// objProxy.ok = false;
+
+effect(() => {
+  objProxy.ok = objProxy.ok - 1;
+});

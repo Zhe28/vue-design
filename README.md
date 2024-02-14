@@ -6,7 +6,8 @@
 
 1. [x] 一个简单的响应式系统
 2. [x] 完成分支切换和cleanup
-3. [ ] 嵌套使用 effect
-4. [ ] 调度执行
-5. [ ] computed 与 lazy
-6. [ ] watch实现原理
+3. [x] 嵌套使用 effect
+4. [x] 避免无限递归循环
+5. [ ] 调度执行
+6. [ ] computed 与 lazy
+7. [ ] watch实现原理
