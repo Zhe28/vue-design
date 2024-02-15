@@ -18,10 +18,14 @@ function trigger(target, key, newValue) {
   if (!effects) {
     return;
   }
-  new Set(effects).forEach((fn) => {
+  new Set(effects).forEach((effectFn) => {
     // avoid maximum call stack size exceeded
-    if (activeEffect !== fn) {
-      fn();
+    if (activeEffect !== effectFn) {
+      if (effectFn.options.scheduler) {
+        return effectFn.options.scheduler(effectFn);
+      } else {
+        effectFn();
+      }
     }
   });
 }
@@ -69,7 +73,7 @@ function cleanup(effectFn) {
   effectFn.deps.length = 0;
 }
 
-function effect(fn) {
+function effect(fn, options) {
   const effectFn = () => {
     cleanup(effectFn);
     activeEffect = effectFn;
@@ -78,6 +82,7 @@ function effect(fn) {
     effectStack.pop();
     activeEffect = effectStack[effectStack.length - 1];
   };
+  effectFn.options = options;
   effectFn.deps = [];
   effectFn();
 }
@@ -89,17 +94,27 @@ function effect(fn) {
 // objProxy.ok = false;
 // }, 3000);
 
-effect(function () {
-  console.log("this is effecfFn1.");
-  effect(function () {
-    console.log("this is effectFn2.");
-    let tmp2 = objProxy.ok;
-  });
-  let tmp = objProxy.ok;
-});
+// effect(function() {
+// 	console.log("this is effecfFn1.");
+// 	effect(function() {
+// 		console.log("this is effectFn2.");
+// 		let tmp2 = objProxy.ok;
+// 	});
+// 	let tmp = objProxy.ok;
+// });
 
 // objProxy.ok = false;
+console.time();
+effect(
+  () => {
+    console.log(`the function has been run. the value is ${objProxy.ok}`);
+  },
+  {
+    scheduler(effectFn) {
+      setTimeout(effectFn, 3000);
+    },
+  },
+);
 
-effect(() => {
-  objProxy.ok = objProxy.ok - 1;
-});
+objProxy.ok = false;
+console.timeEnd();
