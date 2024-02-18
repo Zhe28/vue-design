@@ -9,5 +9,5 @@
 3. [x] 嵌套使用 effect
 4. [x] 避免无限递归循环
 5. [x] 调度执行
-6. [ ] computed 与 lazy
+6. [x] computed 与 lazy
 7. [ ] watch实现原理

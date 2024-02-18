@@ -8,7 +8,7 @@ let bucket = new WeakMap();
  * @param key
  * @param newValue
  */
-function trigger(target, key, newValue) {
+function trigger(target, key) {
   let depsMap = bucket.get(target);
   if (!depsMap) {
     return;
@@ -73,16 +73,51 @@ function cleanup(effectFn) {
   effectFn.deps.length = 0;
 }
 
-function effect(fn, options) {
+function effect(fn, options = { lazy: false }) {
   const effectFn = () => {
     cleanup(effectFn);
     activeEffect = effectFn;
     effectStack.push(activeEffect);
-    fn();
+    const res = fn();
     effectStack.pop();
     activeEffect = effectStack[effectStack.length - 1];
+    return res;
   };
   effectFn.options = options;
   effectFn.deps = [];
-  effectFn();
+
+  if (!options.lazy) {
+    effectFn();
+  }
+
+  return effectFn;
 }
+
+function computed(getter) {
+  let value;
+  let dirty = true;
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler() {
+      // 副作用函数重新执行后dirty值变脏
+      dirty = true;
+      trigger(obj, value);
+    },
+  });
+
+  const obj = {
+    get value() {
+      if (dirty) {
+        // 重新获取值，dirty取消脏值
+        dirty = false;
+        value = effectFn();
+      }
+      track(obj, value);
+      return value;
+    },
+  };
+
+  return obj;
+}
+
+export { effect, computed, objProxy };
