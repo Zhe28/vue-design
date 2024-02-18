@@ -10,4 +10,4 @@
 4. [x] 避免无限递归循环
 5. [x] 调度执行
 6. [x] computed 与 lazy
-7. [ ] watch实现原理
+7. [x] watch实现原理
