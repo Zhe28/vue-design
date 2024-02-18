@@ -1,4 +1,4 @@
-import { computed, effect, objProxy } from "./index.js";
+import { computed, createProxy, effect, objProxy, watch } from "./index.js";
 
 // effect嵌套测试
 //
@@ -36,25 +36,41 @@ import { computed, effect, objProxy } from "./index.js";
 // objProxy.ok = false;
 // console.timeEnd();
 
-// effect 懒执行 测试
-//
-const effectFn = effect(
-  function () {
-    console.log(`lazy test.`);
-  },
-  { lazy: true },
-);
+// // effect 懒执行 测试
+// //
+// const effectFn = effect(
+//   function () {
+//     console.log(`lazy test.`);
+//   },
+//   { lazy: true },
+// );
 
-console.log(effectFn);
+// console.log(effectFn);
 
-// computed 实现
-const obj = computed(() => objProxy.ok);
-console.log(obj.value);
-console.log(obj.value);
+// // computed 实现
+// const obj = computed(() => objProxy.ok);
+// console.log(obj.value);
+// console.log(obj.value);
 
-// 特殊的 effect 嵌套
-effect(() => {
-  console.log(obj.value);
+// // 特殊的 effect 嵌套
+// effect(() => {
+//   console.log(obj.value);
+// });
+
+// objProxy.ok = false;
+
+const obj = createProxy({
+  foo: "foo",
+  bar: "bar",
 });
 
-objProxy.ok = false;
+watch(
+  () => obj.foo,
+  (newValue, oldValue) => {
+    console.log("the value has changed.");
+    console.log(`and the newValue : ${newValue}, oldValue : ${oldValue}`);
+  },
+);
+
+// obj.bar = "bar has changed."
+obj.foo = "foo has changed.";

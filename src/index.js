@@ -6,7 +6,6 @@ let bucket = new WeakMap();
  * activity bucket trigger
  * @param target
  * @param key
- * @param newValue
  */
 function trigger(target, key) {
   let depsMap = bucket.get(target);
@@ -55,8 +54,8 @@ const objProxy = new Proxy(
   { ok: true },
   {
     set(target, p, newValue, receiver) {
-      trigger(target, p, newValue);
       const result = Reflect.set(target, p, newValue, receiver);
+      trigger(target, p);
       return result;
     },
     get(target, p, receiver) {
@@ -65,6 +64,20 @@ const objProxy = new Proxy(
     },
   },
 );
+
+export function createProxy(obj) {
+  return new Proxy(obj, {
+    set(target, p, newValue, receiver) {
+      const result = Reflect.set(target, p, newValue, receiver);
+      trigger(target, p);
+      return result;
+    },
+    get(target, p, receiver) {
+      track(target, p);
+      return Reflect.get(target, p, receiver);
+    },
+  });
+}
 
 function cleanup(effectFn) {
   effectFn.deps.forEach((effects) => {
@@ -118,6 +131,39 @@ function computed(getter) {
   };
 
   return obj;
+}
+
+export function watch(source, cb) {
+  let getter;
+  if (typeof source === "function") {
+    getter = source;
+  } else {
+    getter = () => traverse(source);
+  }
+  let newValue, oldValue;
+  const effectFn = effect(getter, {
+    lazy: true,
+    scheduler() {
+      newValue = effectFn();
+      cb(newValue, oldValue);
+      oldValue = newValue;
+    },
+  });
+  oldValue = effectFn();
+
+  // 遍历属性节点， 建立联接
+  function traverse(source, seen = new Set()) {
+    // 判断是否是基础类型
+    if (typeof source !== "object" || source === null || source === undefined || seen.has(source)) {
+      return;
+    }
+
+    seen.add(source);
+    for (const key in source) {
+      traverse(source[key], seen);
+    }
+    return source;
+  }
 }
 
 export { effect, computed, objProxy };
