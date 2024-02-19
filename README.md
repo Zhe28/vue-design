@@ -12,3 +12,4 @@
 6. [x] computed 与 lazy
 7. [x] watch实现原理
 8. [x] 立即执行的 watch 和执行时机
+9. [x] 清理过期副作用函数

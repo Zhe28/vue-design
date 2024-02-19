@@ -141,6 +141,8 @@ export function watch(source, cb, options = {}) {
     getter = () => traverse(source);
   }
   let newValue, oldValue;
+  let cleanup;
+
   const effectFn = effect(getter, {
     lazy: true,
     scheduler: () => {
@@ -175,8 +177,17 @@ export function watch(source, cb, options = {}) {
 
   function job() {
     newValue = effectFn();
-    cb(newValue, oldValue);
+
+    if (cleanup) {
+      cleanup();
+    }
+    cb(newValue, oldValue, onInvalidate);
     oldValue = newValue;
+  }
+
+  // 过期的副作用函数
+  function onInvalidate(fn) {
+    cleanup = fn;
   }
 }
 
