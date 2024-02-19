@@ -133,7 +133,7 @@ function computed(getter) {
   return obj;
 }
 
-export function watch(source, cb) {
+export function watch(source, cb, options = {}) {
   let getter;
   if (typeof source === "function") {
     getter = source;
@@ -143,13 +143,21 @@ export function watch(source, cb) {
   let newValue, oldValue;
   const effectFn = effect(getter, {
     lazy: true,
-    scheduler() {
-      newValue = effectFn();
-      cb(newValue, oldValue);
-      oldValue = newValue;
+    scheduler: () => {
+      // 判断调度函数中判断 flush 是否为 'post' ， 如果是，放到为任务队列中运行。
+      if (options.flush === "post") {
+        Promise.resolve().then(job);
+      } else {
+        job();
+      }
     },
   });
-  oldValue = effectFn();
+
+  if (options.immediate) {
+    job();
+  } else {
+    oldValue = effectFn();
+  }
 
   // 遍历属性节点， 建立联接
   function traverse(source, seen = new Set()) {
@@ -163,6 +171,12 @@ export function watch(source, cb) {
       traverse(source[key], seen);
     }
     return source;
+  }
+
+  function job() {
+    newValue = effectFn();
+    cb(newValue, oldValue);
+    oldValue = newValue;
   }
 }
 

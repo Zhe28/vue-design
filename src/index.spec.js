@@ -67,8 +67,18 @@ const obj = createProxy({
 watch(
   () => obj.foo,
   (newValue, oldValue) => {
-    console.log("the value has changed.");
-    console.log(`and the newValue : ${newValue}, oldValue : ${oldValue}`);
+    console.log("the value has changed.", `and the newValue : ${newValue}, oldValue : ${oldValue}`);
+  },
+);
+
+// watch的立即调用
+watch(
+  () => obj.foo,
+  (newValue, oldValue) => {
+    console.log("immediate start. and the value on there -->", newValue, oldValue);
+  },
+  {
+    immediate: true,
   },
 );
 
