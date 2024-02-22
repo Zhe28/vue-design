@@ -6,24 +6,42 @@ let bucket = new WeakMap();
  * activity bucket trigger
  * @param target
  * @param key
+ * @param type
  */
-function trigger(target, key) {
+function trigger(target, key, type) {
   let depsMap = bucket.get(target);
   if (!depsMap) {
     return;
   }
 
   const effects = depsMap.get(key);
-  if (!effects) {
-    return;
+  const iterateEffects = depsMap.get(ITERATE_KEY);
+
+  // if (!effects) {
+  //   return;
+  // }
+
+  const effectsToRun = new Set();
+  effects &&
+    effects.forEach((effect) => {
+      effectsToRun.add(effect);
+    });
+
+  // 因为增加和删除都会影响对象的长度和 for 循环的次数，要重新执行一遍副作用函数
+  if (type === triggerType.add || triggerType.delete) {
+    iterateEffects &&
+      iterateEffects.forEach((effect) => {
+        effectsToRun.add(effect);
+      });
   }
-  new Set(effects).forEach((effectFn) => {
+
+  effectsToRun.forEach((effect) => {
     // avoid maximum call stack size exceeded
-    if (activeEffect !== effectFn) {
-      if (effectFn.options.scheduler) {
-        return effectFn.options.scheduler(effectFn);
+    if (activeEffect !== effect) {
+      if (effect.options.scheduler) {
+        return effect.options.scheduler(effect);
       } else {
-        effectFn();
+        effect();
       }
     }
   });
@@ -65,16 +83,42 @@ const objProxy = new Proxy(
   },
 );
 
+const ITERATE_KEY = Symbol();
+const triggerType = { set: "SET", add: "ADD", delete: "DELETE" };
+
 export function createProxy(obj) {
   return new Proxy(obj, {
     set(target, p, newValue, receiver) {
+      // 检测属性是否存在
+      const type = Object.prototype.hasOwnProperty.call(target, p) ? triggerType.set : triggerType.add;
       const result = Reflect.set(target, p, newValue, receiver);
-      trigger(target, p);
+
+      trigger(target, p, type);
       return result;
     },
     get(target, p, receiver) {
       track(target, p);
       return Reflect.get(target, p, receiver);
+    },
+    // 拦截带 in 的响应式变量
+    has(target, p) {
+      track(target, p);
+      return Reflect.has(target, p);
+    },
+    // 拦截 for ... in 的响应式变量
+    ownKeys(target) {
+      track(target, ITERATE_KEY);
+      return Reflect.ownKeys(target);
+    },
+    // 拦截 delete 操作符
+    deleteProperty(target, p) {
+      const hadKey = Object.prototype.hasOwnProperty.call(target, p);
+      const res = Reflect.deleteProperty(target, p);
+      if (res && hadKey) {
+        trigger(target, p, triggerType.delete);
+      }
+
+      return res;
     },
   });
 }

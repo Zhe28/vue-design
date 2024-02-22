@@ -94,3 +94,30 @@ import { computed, createProxy, effect, objProxy, watch } from "./index.js";
  * todo: 过期的副作用函数
  */
 // 条件不好实现，暂时不做。
+
+/**
+ * todo: 代理 object. 主要的几个 js关键字 "in" "for .. in" "delete"
+ * 具体的一些东西在 ecma 官方文档中，我这里是跟书中的标准一样的， "ecma262” 网址 https://262.ecma-international.org/14.0/
+ */
+// 'foo' in obj 测试
+const obj = createProxy({ foo: "foo" });
+effect(() => {
+  console.log(`foo in obj ? ${"foo" in obj}`);
+});
+obj.foo = "foo2";
+
+// for ... in 测试。 通过 debugger 可以看到已经可以触发收集依赖了
+effect(() => {
+  for (const propertyKey in obj) {
+    console.log(`iterate the obj , and the propertyKey is ${obj[propertyKey]}`);
+  }
+});
+
+// 增加响应式对象属性后触发依赖
+obj.bar = "bar";
+
+//  更新数据时触发依赖
+obj.bar = "bar2";
+
+// delete 关键字
+delete obj.bar;
