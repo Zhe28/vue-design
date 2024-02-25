@@ -86,17 +86,33 @@ const objProxy = new Proxy(
 const ITERATE_KEY = Symbol();
 const triggerType = { set: "SET", add: "ADD", delete: "DELETE" };
 
-export function createProxy(obj) {
+export function reactive(obj) {
   return new Proxy(obj, {
     set(target, p, newValue, receiver) {
+      // 检测数值是否变动
+      const oldValue = target[p];
       // 检测属性是否存在
       const type = Object.prototype.hasOwnProperty.call(target, p) ? triggerType.set : triggerType.add;
       const result = Reflect.set(target, p, newValue, receiver);
 
-      trigger(target, p, type);
+      // 检测是否是原始值
+      if (target === receiver["raw"]) {
+        /**  (newValue === newValue || oldValue === oldValue)
+         * 众所周知 NaN === NaN 结果是 false. （就我不知 -_-. 好像 isNaN() 函数也是可以的？)这里巧妙地利用了这点。
+         * 当新旧的数值不同时， 不触发函数的 trigger. 因为没有必要。
+         */
+        if (newValue !== oldValue && (newValue === newValue || oldValue === oldValue)) {
+          trigger(target, p, type);
+        }
+      }
+
       return result;
     },
     get(target, p, receiver) {
+      // 读取 raw 属性， 返回 target 对象。
+      if ("raw" === p) {
+        return target;
+      }
       track(target, p);
       return Reflect.get(target, p, receiver);
     },

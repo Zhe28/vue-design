@@ -1,4 +1,4 @@
-import { computed, createProxy, effect, objProxy, watch } from "./index.js";
+import { computed, effect, objProxy, reactive, watch } from "./index.js";
 
 /**
  * todo: effect嵌套测试
@@ -64,7 +64,7 @@ import { computed, createProxy, effect, objProxy, watch } from "./index.js";
 
 // objProxy.ok = false;
 
-// const obj = createProxy({
+// const obj = reactive({
 //   foo: "foo",
 //   bar: "bar",
 // });
@@ -99,25 +99,61 @@ import { computed, createProxy, effect, objProxy, watch } from "./index.js";
  * todo: 代理 object. 主要的几个 js关键字 "in" "for .. in" "delete"
  * 具体的一些东西在 ecma 官方文档中，我这里是跟书中的标准一样的， "ecma262” 网址 https://262.ecma-international.org/14.0/
  */
-// 'foo' in obj 测试
-const obj = createProxy({ foo: "foo" });
+// // 'foo' in obj 测试
+// const obj = reactive({ foo: "foo" });
+// effect(() => {
+//   console.log(`foo in obj ? ${"foo" in obj}`);
+// });
+// obj.foo = "foo2";
+//
+// // for ... in 测试。 通过 debugger 可以看到已经可以触发收集依赖了
+// effect(() => {
+//   for (const propertyKey in obj) {
+//     console.log(`iterate the obj , and the propertyKey is ${obj[propertyKey]}`);
+//   }
+// });
+//
+// // 增加响应式对象属性后触发依赖
+// obj.bar = "bar";
+//
+// //  更新数据时触发依赖
+// obj.bar = "bar2";
+//
+// // delete 关键字
+// delete obj.bar;
+
+/**
+ * todo: 合理的触发响应
+ * 1. 相同的值时会触发副作用函数，因为没必要，数值不动，副作用的执行结果都是相同的。
+ * 2. 当对象继承时，读取原型的属性，会导致副作用函数连续触发两次。
+ */
+
+const child = {};
+const parent = { foo: "foo", bar: "bar" };
+
+const childProxy = reactive(child);
+const parentProxy = reactive(parent);
+//
+// 相同的值
 effect(() => {
-  console.log(`foo in obj ? ${"foo" in obj}`);
+  // 与副作用函数建立联系
+  console.log(`the reactive value is : ${parentProxy.foo}`);
 });
-obj.foo = "foo2";
 
-// for ... in 测试。 通过 debugger 可以看到已经可以触发收集依赖了
+parentProxy.foo = "foo";
+
+// 关于继承问题
+Object.setPrototypeOf(childProxy, parentProxy);
 effect(() => {
-  for (const propertyKey in obj) {
-    console.log(`iterate the obj , and the propertyKey is ${obj[propertyKey]}`);
-  }
+  console.log(`parent property: bar -->${childProxy.bar}`);
 });
-
-// 增加响应式对象属性后触发依赖
-obj.bar = "bar";
-
-//  更新数据时触发依赖
-obj.bar = "bar2";
-
-// delete 关键字
-delete obj.bar;
+/**
+ * 这是结果：
+ * the reactive value is : foo
+ * parent property: foo -->foo
+ * the reactive value is : foo
+ * 会发现多执行了一遍函数
+ * parent property: foo -->foo-changed
+ * parent property: foo -->foo-changed
+ */
+childProxy.bar = "bar-changed";
