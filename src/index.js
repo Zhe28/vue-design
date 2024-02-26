@@ -86,7 +86,18 @@ const objProxy = new Proxy(
 const ITERATE_KEY = Symbol();
 const triggerType = { set: "SET", add: "ADD", delete: "DELETE" };
 
+// 深响应式代理对象
 export function reactive(obj) {
+  return createReactive(obj, false);
+}
+
+// 浅响应式代理对象
+export function shallowReactive(obj) {
+  return createReactive(obj, true);
+}
+
+// 创建响应式代理对象
+function createReactive(obj, shallowReactive = false) {
   return new Proxy(obj, {
     set(target, p, newValue, receiver) {
       // 检测数值是否变动
@@ -114,7 +125,18 @@ export function reactive(obj) {
         return target;
       }
       track(target, p);
-      return Reflect.get(target, p, receiver);
+
+      const res = Reflect.get(target, p, receiver);
+
+      // 深浅响应式对象的结果不同处理方式
+      if (shallowReactive) {
+        return res;
+      }
+      if (typeof res === "object" && obj !== null) {
+        return reactive(res);
+      }
+
+      return res;
     },
     // 拦截带 in 的响应式变量
     has(target, p) {

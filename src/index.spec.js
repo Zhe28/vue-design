@@ -1,4 +1,4 @@
-import { computed, effect, objProxy, reactive, watch } from "./index.js";
+import { computed, effect, objProxy, reactive, shallowReactive, watch } from "./index.js";
 
 /**
  * todo: effect嵌套测试
@@ -128,32 +128,51 @@ import { computed, effect, objProxy, reactive, watch } from "./index.js";
  * 2. 当对象继承时，读取原型的属性，会导致副作用函数连续触发两次。
  */
 
-const child = {};
-const parent = { foo: "foo", bar: "bar" };
-
-const childProxy = reactive(child);
-const parentProxy = reactive(parent);
+// const child = {};
+// const parent = { foo: "foo", bar: "bar" };
 //
-// 相同的值
-effect(() => {
-  // 与副作用函数建立联系
-  console.log(`the reactive value is : ${parentProxy.foo}`);
-});
+// const childProxy = reactive(child);
+// const parentProxy = reactive(parent);
+// //
+// // 相同的值
+// effect(() => {
+//   // 与副作用函数建立联系
+//   console.log(`the reactive value is : ${parentProxy.foo}`);
+// });
+//
+// parentProxy.foo = "foo";
+//
+// // 关于继承问题
+// Object.setPrototypeOf(childProxy, parentProxy);
+// effect(() => {
+//   console.log(`parent property: bar -->${childProxy.bar}`);
+// });
+// /**
+//  * 这是结果：
+//  * the reactive value is : foo
+//  * parent property: foo -->foo
+//  * the reactive value is : foo
+//  * 会发现多执行了一遍函数
+//  * parent property: foo -->foo-changed
+//  * parent property: foo -->foo-changed
+//  */
+// childProxy.bar = "bar-changed";
 
-parentProxy.foo = "foo";
-
-// 关于继承问题
-Object.setPrototypeOf(childProxy, parentProxy);
-effect(() => {
-  console.log(`parent property: bar -->${childProxy.bar}`);
-});
 /**
- * 这是结果：
- * the reactive value is : foo
- * parent property: foo -->foo
- * the reactive value is : foo
- * 会发现多执行了一遍函数
- * parent property: foo -->foo-changed
- * parent property: foo -->foo-changed
+ * todo: 深响应和浅响应
+ * 由于之前的响应式默认是浅相应的。全部深相应需要将得到的结果在 getHandler 处理一遍。
  */
-childProxy.bar = "bar-changed";
+// 深相应实例
+const deepReactive = reactive({ foo: { bar: "bar" } });
+effect(() => {
+  console.log(`the deepsReactive value { foo: { bar: "bar" } }, get the bar key value --> ${deepReactive.foo.bar}`);
+});
+deepReactive.foo.bar = "bar2";
+// 浅相应实例
+const _shallowReactive = shallowReactive({ foo: { bar: "bar" } });
+effect(() => {
+  console.log(
+    `the _shallowReactive value { foo: { bar: "bar" } }, get the bar key value --> ${_shallowReactive.foo.bar}`,
+  );
+});
+_shallowReactive.foo.bar = "bar2";
