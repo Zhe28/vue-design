@@ -184,7 +184,7 @@ import { computed, effect, reactive, readonly, shallowReactive, shallowReadonly,
  *
  * 在 getHandler 和 setHandler 中处理， getHandler 中不予触发 track, setHandler 中不予触发 trigger。不过书中的返回的时 true,
  * 直接返回 false 貌似也可以的。
- * 在 deletePropertyHandler 中也需要处理，毕竟是删除属性，制度的话不能删。
+ * 在 deletePropertyHandler 中也需要处理，毕竟是删除属性，不能删。
  * PS: 不知道例子是否是正确的， 跟书中的有些许的不同。书上只读取到了 _*.foo. 我写到了 bar 层。但是我看效果貌似是相同的。
  */
 
