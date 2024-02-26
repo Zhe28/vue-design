@@ -1,4 +1,4 @@
-import { computed, effect, objProxy, reactive, shallowReactive, watch } from "./index.js";
+import { computed, effect, reactive, readonly, shallowReactive, shallowReadonly, watch } from "./index.js";
 
 /**
  * todo: effect嵌套测试
@@ -162,17 +162,37 @@ import { computed, effect, objProxy, reactive, shallowReactive, watch } from "./
  * todo: 深响应和浅响应
  * 由于之前的响应式默认是浅相应的。全部深相应需要将得到的结果在 getHandler 处理一遍。
  */
-// 深相应实例
-const deepReactive = reactive({ foo: { bar: "bar" } });
+// // 深相应实例
+// const deepReactive = reactive({ foo: { bar: "bar" } });
+// effect(() => {
+//   console.log(`the deepsReactive value { foo: { bar: "bar" } }, get the bar key value --> ${deepReactive.foo.bar}`);
+// });
+// deepReactive.foo.bar = "bar2";
+// // 浅相应实例
+// const _shallowReactive = shallowReactive({ foo: { bar: "bar" } });
+// effect(() => {
+//   console.log(
+//     `the _shallowReactive value { foo: { bar: "bar" } }, get the bar key value --> ${_shallowReactive.foo.bar}`,
+//   );
+// });
+// _shallowReactive.foo.bar = "bar2";
+
+/**
+ * todo: 深只读和浅只读
+ * 只读的深浅响应式对象，很容易理解，修改结果时不给修改就是了。因为是只读，所以没有触发和收集副作用函数。
+ * 但是问题来了，既然是只读并且不触发副作用函数，有什么必要？直接在创建对象时弄成 readonly 就行了？
+ *
+ * 在 getHandler 和 setHandler 中处理， getHandler 中不予触发 track, setHandler 中不予触发 trigger。不过书中的返回的时 true,
+ * 直接返回 false 貌似也可以的。
+ * 在 deletePropertyHandler 中也需要处理，毕竟是删除属性，制度的话不能删。
+ * PS: 不知道例子是否是正确的， 跟书中的有些许的不同。书上只读取到了 _*.foo. 我写到了 bar 层。但是我看效果貌似是相同的。
+ */
+
+const _shallowReadonly = shallowReadonly({ foo: { bar: "bar" } });
+const _readonly = readonly({ foo: { bar: "bar" } });
 effect(() => {
-  console.log(`the deepsReactive value { foo: { bar: "bar" } }, get the bar key value --> ${deepReactive.foo.bar}`);
+  console.log(`shallowReadonly --> ${_shallowReadonly.foo.bar}`);
+  console.log(`readonly --> ${_readonly.foo.bar}`);
 });
-deepReactive.foo.bar = "bar2";
-// 浅相应实例
-const _shallowReactive = shallowReactive({ foo: { bar: "bar" } });
-effect(() => {
-  console.log(
-    `the _shallowReactive value { foo: { bar: "bar" } }, get the bar key value --> ${_shallowReactive.foo.bar}`,
-  );
-});
-_shallowReactive.foo.bar = "bar2";
+_shallowReadonly.foo = { bar: "bar2" };
+_readonly.foo.bar = "bar2";

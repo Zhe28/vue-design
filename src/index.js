@@ -3,10 +3,10 @@ const effectStack = [];
 let bucket = new WeakMap();
 
 /**
- * activity bucket trigger
- * @param target
- * @param key
- * @param type
+ * 依赖触发
+ * @param target 被代理的目标对象
+ * @param key 对象属性
+ * @param type 触发响应的类型: 增加、删除、修改
  */
 function trigger(target, key, type) {
   let depsMap = bucket.get(target);
@@ -48,9 +48,9 @@ function trigger(target, key, type) {
 }
 
 /**
- * activity bucket add track
- * @param target
- * @param key
+ * 建立响应式对象和副作用函数的联系
+ * @param target 被代理的目标对象
+ * @param key 对象属性
  */
 function track(target, key) {
   if (!activeEffect) {
@@ -68,38 +68,19 @@ function track(target, key) {
   activeEffect.deps.push(deps);
 }
 
-const objProxy = new Proxy(
-  { ok: true },
-  {
-    set(target, p, newValue, receiver) {
-      const result = Reflect.set(target, p, newValue, receiver);
-      trigger(target, p);
-      return result;
-    },
-    get(target, p, receiver) {
-      track(target, p);
-      return Reflect.get(target, p, receiver);
-    },
-  },
-);
-
 const ITERATE_KEY = Symbol();
 const triggerType = { set: "SET", add: "ADD", delete: "DELETE" };
 
-// 深响应式代理对象
-export function reactive(obj) {
-  return createReactive(obj, false);
-}
-
-// 浅响应式代理对象
-export function shallowReactive(obj) {
-  return createReactive(obj, true);
-}
-
 // 创建响应式代理对象
-function createReactive(obj, shallowReactive = false) {
+function createReactive(obj, isShallow = false, isReadonly = false) {
   return new Proxy(obj, {
     set(target, p, newValue, receiver) {
+      // 只读属性无法更改数值
+      if (isReadonly) {
+        console.warn(`属性 ${p} 只读，无法更改`);
+        return true;
+      }
+
       // 检测数值是否变动
       const oldValue = target[p];
       // 检测属性是否存在
@@ -124,16 +105,20 @@ function createReactive(obj, shallowReactive = false) {
       if ("raw" === p) {
         return target;
       }
-      track(target, p);
+
+      // 只读属性不触发收集依赖
+      if (!isReadonly) {
+        track(target, p);
+      }
 
       const res = Reflect.get(target, p, receiver);
 
       // 深浅响应式对象的结果不同处理方式
-      if (shallowReactive) {
+      if (isShallow) {
         return res;
       }
       if (typeof res === "object" && obj !== null) {
-        return reactive(res);
+        return isReadonly ? readonly(res) : reactive(res);
       }
 
       return res;
@@ -150,6 +135,12 @@ function createReactive(obj, shallowReactive = false) {
     },
     // 拦截 delete 操作符
     deleteProperty(target, p) {
+      // 只读属性无法更改数值
+      if (isReadonly) {
+        console.warn(`属性 ${p} 只读，无法更改`);
+        return true;
+      }
+
       const hadKey = Object.prototype.hasOwnProperty.call(target, p);
       const res = Reflect.deleteProperty(target, p);
       if (res && hadKey) {
@@ -161,6 +152,26 @@ function createReactive(obj, shallowReactive = false) {
   });
 }
 
+// 深响应式代理对象
+export function reactive(obj) {
+  return createReactive(obj, false, false);
+}
+
+// 浅响应式代理对象
+export function shallowReactive(obj) {
+  return createReactive(obj, true, false);
+}
+
+// 浅只读响应式代理对象
+export function shallowReadonly(obj) {
+  return createReactive(obj, true, true);
+}
+
+// 深只读代理响应式对象
+export function readonly(obj) {
+  return createReactive(obj, false, true);
+}
+
 function cleanup(effectFn) {
   effectFn.deps.forEach((effects) => {
     effects.delete(effectFn);
@@ -168,7 +179,13 @@ function cleanup(effectFn) {
   effectFn.deps.length = 0;
 }
 
-function effect(fn, options = { lazy: false }) {
+/**
+ * effect 包装副作用函数，然后执行收集响应式对象，与副作用函数建立链接。属性变动时触发副作用函数重新执行
+ * @param fn 副作用函数
+ * @param options 额外的参数
+ * @returns {function(): *} 返回包装后的副作用函数
+ */
+export function effect(fn, options = { lazy: false }) {
   const effectFn = () => {
     cleanup(effectFn);
     activeEffect = effectFn;
@@ -180,6 +197,7 @@ function effect(fn, options = { lazy: false }) {
   };
   effectFn.options = options;
   effectFn.deps = [];
+  6;
 
   if (!options.lazy) {
     effectFn();
@@ -188,7 +206,12 @@ function effect(fn, options = { lazy: false }) {
   return effectFn;
 }
 
-function computed(getter) {
+/**
+ * computed 缓存计算结果，避免多次执行同样的函数，浪费性能
+ * @param getter getter
+ * @returns {*|{readonly value: *}}
+ */
+export function computed(getter) {
   let value;
   let dirty = true;
   const effectFn = effect(getter, {
@@ -215,6 +238,12 @@ function computed(getter) {
   return obj;
 }
 
+/**
+ * watch 监听响应式对象属性数值是否变动，变动则执行相对应的函数
+ * @param source 响应式对象属性或者getter
+ * @param cb 执行的回调函数
+ * @param options 额外的参数
+ */
 export function watch(source, cb, options = {}) {
   let getter;
   if (typeof source === "function") {
@@ -272,5 +301,3 @@ export function watch(source, cb, options = {}) {
     cleanup = fn;
   }
 }
-
-export { effect, computed, objProxy };
