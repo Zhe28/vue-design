@@ -28,7 +28,7 @@ function trigger(target, key, type) {
     });
 
   // 因为增加和删除都会影响对象的长度和 for 循环的次数，要重新执行一遍副作用函数
-  if (type === triggerType.add || triggerType.delete) {
+  if (type === triggerType.add || type === triggerType.delete) {
     iterateEffects &&
       iterateEffects.forEach((effect) => {
         effectsToRun.add(effect);
