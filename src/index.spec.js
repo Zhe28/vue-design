@@ -188,11 +188,25 @@ import { computed, effect, reactive, readonly, shallowReactive, shallowReadonly,
  * PS: 不知道例子是否是正确的， 跟书中的有些许的不同。书上只读取到了 _*.foo. 我写到了 bar 层。但是我看效果貌似是相同的。
  */
 
-const _shallowReadonly = shallowReadonly({ foo: { bar: "bar" } });
-const _readonly = readonly({ foo: { bar: "bar" } });
+// const _shallowReadonly = shallowReadonly({ foo: { bar: "bar" } });
+// const _readonly = readonly({ foo: { bar: "bar" } });
+// effect(() => {
+//   console.log(`shallowReadonly --> ${_shallowReadonly.foo.bar}`);
+//   console.log(`readonly --> ${_readonly.foo.bar}`);
+// });
+// _shallowReadonly.foo = { bar: "bar2" };
+// _readonly.foo.bar = "bar2";
+
+/**
+ * todo: 代理数组
+ * 数组索引与 length :
+ */
+
+// 数组索引与 length
+const arr = reactive(["foo"]);
 effect(() => {
-  console.log(`shallowReadonly --> ${_shallowReadonly.foo.bar}`);
-  console.log(`readonly --> ${_readonly.foo.bar}`);
+  console.log(arr.length);
 });
-_shallowReadonly.foo = { bar: "bar2" };
-_readonly.foo.bar = "bar2";
+
+arr[2] = "bar";
+arr.length = 0;
