@@ -199,14 +199,26 @@ import { computed, effect, reactive, readonly, shallowReactive, shallowReadonly,
 
 /**
  * todo: 代理数组
- * 数组索引与 length :
+ * 数组索引与 length
+ * 数组遍历
  */
 
-// 数组索引与 length
-const arr = reactive(["foo"]);
+// // 数组索引与 length
+// const arr = reactive(["foo"]);
+// effect(() => {
+//   console.log(arr[0]);
+// });
+//
+// arr[0] = "bar";
+// arr.length = 0;
+
+// for ... in 数组遍历
+const arr = reactive([1, 2, 3]);
 effect(() => {
-  console.log(arr.length);
+  for (const res in arr) {
+    console.log(res);
+  }
 });
 
-arr[2] = "bar";
+// arr[3] = "bar";
 arr.length = 0;

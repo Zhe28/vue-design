@@ -85,24 +85,24 @@ function trigger(target, key, type, newValue) {
    */
   const effectsToRun = new Set();
   effects &&
-    effects.forEach((effect) => {
-      effectsToRun.add(effect);
+    effects.forEach((effectFn) => {
+      effectsToRun.add(effectFn);
     });
 
   // for ... in 循环时， 因为增加和删除都会影响对象的长度和 for 循环的次数，要重新执行一遍副作用函数
   if (type === triggerType.ADD || type === triggerType.DELETE) {
     iterateEffects &&
-      iterateEffects.forEach((effect) => {
-        effectsToRun.add(effect);
+      iterateEffects.forEach((effectFn) => {
+        effectsToRun.add(effectFn);
       });
   }
   // 当类型是 triggerType.add 时， 并且是数组时，将函数加入到effectsToRun中运行
   if (type === triggerType.ADD && Array.isArray(target)) {
     const lengthEffects = depsMap.get("length");
     lengthEffects &&
-      lengthEffects.forEach((effect) => {
-        if (effect !== activeEffect) {
-          effectsToRun.add(effect);
+      lengthEffects.forEach((effectFn) => {
+        if (effectFn !== activeEffect) {
+          effectsToRun.add(effectFn);
         }
       });
   }
@@ -187,7 +187,8 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       }
 
       // 只读属性不触发收集依赖
-      if (!isReadonly) {
+      // 或者 property 属性类型不是 symbol 值时，不触发依赖 ( for ... of 遍历时 property属性是 symbol [@@Symbol.iterator])
+      if (!isReadonly && typeof p !== "symbol") {
         track(target, p);
       }
 
@@ -210,7 +211,9 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
     },
     // 拦截 for ... in 的响应式变量
     ownKeys(target) {
-      track(target, ITERATE_KEY);
+      // for ... in 遍历时。检测对象是否是数组，如果是数组,使用 length 属性建立连接
+      // 否则 ITERATE_KEY 属性建立连接
+      track(target, Array.isArray(target) ? "length" : "ITERATE_KEY");
       return Reflect.ownKeys(target);
     },
     // 拦截 delete 操作符
