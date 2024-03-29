@@ -63,7 +63,8 @@ const triggerType = {
 };
 
 /**
- * @type {boolean} 是否在进行 Array.{pop|push|shift|unshift} 时，跟踪 数组的索引 length
+ * 是否在进行 Array.{pop|push|shift|unshift} 时，跟踪 数组的索引 length
+ * @type {boolean}
  */
 let shouldTrack;
 
