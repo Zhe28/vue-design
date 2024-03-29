@@ -230,15 +230,22 @@ import { computed, effect, reactive, readonly, shallowReactive, shallowReadonly,
 // console.log(arr.includes(obj));
 
 // 隐形数组索引修改
-const arr = reactive([1, 2, 3]);
-effect(() => {
-  console.log(arr);
-  arr.push(4);
-});
+// 调用 pop | push | shift | unshift 方法时，会隐形的修改数组索引，导致触发依赖。
+// const arr = reactive([1, 2, 3]);
+// effect(() => {
+//   console.log(arr);
+//   arr.push(4);
+// });
 
-effect(() => {
-  console.log(arr);
-  arr.push(5);
-});
-arr.length = 2;
-console.log(arr);
+// effect(() => {
+//   console.log(arr);
+//   arr.push(5);
+// });
+// arr.length = 2;
+// console.log(arr);
+
+// 代理 Map | Set 集合
+const set = new Set([1, 2, 3]);
+const obj = reactive(set);
+console.log(obj.size);
+obj.delete(1);

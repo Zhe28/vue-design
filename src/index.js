@@ -241,6 +241,10 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
         return target;
       }
 
+      if (p === "size") {
+        return Reflect.get(target, p, target);
+      }
+
       // 如果对象是数组，并且key在arrayInstrumentation上
       // 返回定义在 arrayInstrumentation对象的数值
       if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(p)) {
@@ -253,7 +257,8 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
         track(target, p);
       }
 
-      const res = Reflect.get(target, p, receiver);
+      // const res = Reflect.get(target, p, receiver);
+      const res = target[p].bind(target);
 
       // 深浅响应式对象的结果不同处理方式
       if (isShallow) {
