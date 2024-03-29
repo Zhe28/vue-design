@@ -63,6 +63,11 @@ const triggerType = {
 };
 
 /**
+ * @type {boolean} 是否在进行 Array.{pop|push|shift|unshift} 时，跟踪 数组的索引 length
+ */
+let shouldTrack;
+
+/**
  * 响应式对象变动，依赖触发
  * @function
  * @param {target} target  被代理的目标对象
@@ -140,7 +145,7 @@ function trigger(target, key, type, newValue) {
  * @param {any} key 对象属性
  */
 function track(target, key) {
-  if (!activeEffect) {
+  if (!activeEffect || !shouldTrack) {
     return;
   }
   let depsMap = bucket.get(target);
@@ -166,17 +171,29 @@ function track(target, key) {
 function createReactive(obj, isShallow = false, isReadonly = false) {
   const arrayInstrumentations = {
     includes: function (...args) {
-      return changeArrayMethods(args, this, "includes");
+      return changeArraySearchMethods(args, this, "includes");
     },
     indexOf: function (...args) {
-      return changeArrayMethods(args, this, "indexOf");
+      return changeArraySearchMethods(args, this, "indexOf");
     },
     lastIndexOf: function (...args) {
-      return changeArrayMethods(args, this, "lastIndexOf");
+      return changeArraySearchMethods(args, this, "lastIndexOf");
+    },
+    pop: function (...args) {
+      return changeArrayIndexMethods(args, this, "pop");
+    },
+    push: function (...args) {
+      return changeArrayIndexMethods(args, this, "push");
+    },
+    shift: function (...args) {
+      return changeArrayIndexMethods(args, this, "shift");
+    },
+    unshift: function (...args) {
+      return changeArrayIndexMethods(args, this, "unshift");
     },
   };
 
-  function changeArrayMethods(args, proxy, method) {
+  function changeArraySearchMethods(args, proxy, method) {
     /**
      * @type {Array.includes | Array.indexOf | Array.lastIndexOf}
      */
@@ -186,6 +203,18 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
     if (res === false) {
       res = originMethod.apply(proxy.raw, args);
     }
+    return res;
+  }
+
+  function changeArrayIndexMethods(args, proxy, method) {
+    /**
+     * @type {Array.pop | Array.push | Array.shift | Array.unshift}
+     */
+    const originMethod = Array.prototype[method];
+
+    shouldTrack = false;
+    let res = originMethod.apply(proxy, args);
+    shouldTrack = true;
     return res;
   }
 

@@ -216,7 +216,7 @@ import { computed, effect, reactive, readonly, shallowReactive, shallowReadonly,
 // const arr = reactive([1, 2, 3]);
 // effect(() => {
 //   for (const res in arr) {
-//     console.log(res);
+//     console.log(res)
 //   }
 // });
 
@@ -224,7 +224,21 @@ import { computed, effect, reactive, readonly, shallowReactive, shallowReadonly,
 // arr.length = 0;
 
 // 对象数组的查询方法
-const obj = {};
-const arr = reactive([obj]);
-console.log(arr.includes(arr[0]));
-console.log(arr.includes(obj));
+// const obj = {};
+// const arr = reactive([obj]);
+// console.log(arr.includes(arr[0]));
+// console.log(arr.includes(obj));
+
+// 隐形数组索引修改
+const arr = reactive([1, 2, 3]);
+effect(() => {
+  console.log(arr);
+  arr.push(4);
+});
+
+effect(() => {
+  console.log(arr);
+  arr.push(5);
+});
+arr.length = 2;
+console.log(arr);
