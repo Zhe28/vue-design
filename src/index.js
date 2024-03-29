@@ -160,10 +160,35 @@ function track(target, key) {
  * 创建响应式代理对象
  * @param {target} obj 需要代理的对象
  * @param {boolean} isShallow 建立浅响应代理对象
- * @param {boolean} isReadonly 对象是否是只读
- * @return {any}
+ * @param {boolean} isReadonly 只读对象
+ * @return {ProxyConstructor}
  */
 function createReactive(obj, isShallow = false, isReadonly = false) {
+  const arrayInstrumentations = {
+    includes: function (...args) {
+      return changeArrayMethods(args, this, "includes");
+    },
+    indexOf: function (...args) {
+      return changeArrayMethods(args, this, "indexOf");
+    },
+    lastIndexOf: function (...args) {
+      return changeArrayMethods(args, this, "lastIndexOf");
+    },
+  };
+
+  function changeArrayMethods(args, proxy, method) {
+    /**
+     * @type {Array.includes | Array.indexOf | Array.lastIndexOf}
+     */
+    const originMethod = Array.prototype[method];
+    let res = originMethod.apply(proxy, args);
+
+    if (res === false) {
+      res = originMethod.apply(proxy.raw, args);
+    }
+    return res;
+  }
+
   return new Proxy(obj, {
     deleteProperty(target, p) {
       // 只读属性无法更改数值
@@ -184,6 +209,12 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
       // 读取 raw 属性， 返回 target 对象。
       if ("raw" === p) {
         return target;
+      }
+
+      // 如果对象是数组，并且key在arrayInstrumentation上
+      // 返回定义在 arrayInstrumentation对象的数值
+      if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(p)) {
+        return Reflect.get(arrayInstrumentations, p, receiver);
       }
 
       // 只读属性不触发收集依赖
@@ -254,22 +285,48 @@ function createReactive(obj, isShallow = false, isReadonly = false) {
   });
 }
 
-// 创建深响应式代理对象
+/**
+ * 存储 reactive 的 Map结构
+ * @type {Map<object,ProxyConstructor>}
+ */
+const reactiveMap = new Map();
+
+/**
+ * 创建深响应式代理对象
+ * @param {Object} obj 需要创建代理的对象
+ * @returns {ProxyConstructor}
+ */
 export function reactive(obj) {
-  return createReactive(obj, false, false);
+  const existionProxy = reactiveMap.get(obj);
+  if (existionProxy) return existionProxy;
+  const proxy = createReactive(obj, false, false);
+  reactiveMap.set(obj, proxy);
+  return proxy;
 }
 
-// 创建浅响应式代理对象
+/**
+ *  创建浅响应式代理对象
+ * @param {Object} obj 需要创建代理的对象
+ * @returns {ProxyConstructor}
+ */
 export function shallowReactive(obj) {
   return createReactive(obj, true, false);
 }
 
-// 创建浅只读响应式代理对象
+/**
+ * 创建浅只读响应式代理对象
+ * @param {Object} obj 需要创建代理的对象
+ * @returns {ProxyConstructor}
+ */
 export function shallowReadonly(obj) {
   return createReactive(obj, true, true);
 }
 
-// 创建深只读代理响应式对象
+/**
+ * 创建深只读代理响应式对象
+ * @param {object} obj 需要创建代理的对象
+ * @returns {ProxyConstructor}
+ */
 export function readonly(obj) {
   return createReactive(obj, false, true);
 }

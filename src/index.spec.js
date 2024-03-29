@@ -200,7 +200,7 @@ import { computed, effect, reactive, readonly, shallowReactive, shallowReadonly,
 /**
  * todo: 代理数组
  * 数组索引与 length
- * 数组遍历
+ * 数组遍历, 数组查找方法
  */
 
 // // 数组索引与 length
@@ -213,12 +213,18 @@ import { computed, effect, reactive, readonly, shallowReactive, shallowReadonly,
 // arr.length = 0;
 
 // for ... in 数组遍历
-const arr = reactive([1, 2, 3]);
-effect(() => {
-  for (const res in arr) {
-    console.log(res);
-  }
-});
+// const arr = reactive([1, 2, 3]);
+// effect(() => {
+//   for (const res in arr) {
+//     console.log(res);
+//   }
+// });
 
 // arr[3] = "bar";
-arr.length = 0;
+// arr.length = 0;
+
+// 对象数组的查询方法
+const obj = {};
+const arr = reactive([obj]);
+console.log(arr.includes(arr[0]));
+console.log(arr.includes(obj));
