@@ -180,3 +180,6 @@ tmp
 bun.lockb
 
 public/
+
+# ignore all lock file
+/*lock*
