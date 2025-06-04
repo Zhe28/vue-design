@@ -1,4 +1,4 @@
-import { createRendererConfig } from "./config";
+import { createRendererConfig } from "./rendererConfig";
 
 /**
  * 创建渲染器
@@ -7,16 +7,14 @@ function createRenderer(config = createRendererConfig()) {
   const { clearNode, mountElement } = config;
 
   /**
-   *
-   * @param vnode 虚拟节点
-   * @param container 容器
+   * 渲染器
    */
   function renderer() {
     
     /**
-     * 进行渲染
+     * 渲染函数
      */
-    function render(vnode: VNode, container: Container) {
+    function render(vnode: VNode | null, container: Container) {
       // 如果 vnode 存在， 那么进行打补丁
       if (vnode) patch(container._vnode as VNode, vnode, container);
       // 如果不存在， 就要进行清空
@@ -37,10 +35,10 @@ function createRenderer(config = createRendererConfig()) {
       }
     }
 
-    return render;
+    return {render};
   }
 
-  return { renderer };
+  return renderer();
 }
 
 export { createRenderer };
