@@ -31,9 +31,25 @@ function htmlMode(): Config {
     vnode.props &&
       Object.keys(vnode.props).forEach((key) => {
         const value = vnode.props[key];
-        el.setAttribute(key, value);
+        const valueType = typeof value;
+        // 如果 props 是 el 的 属性值， 那么优先确定属性值里面的内容
+        /**
+         * 为了解决 el.disabled = false， 用户希望禁用按钮，而 el.disabled = false 则是不禁用的意思。
+         */
+        if (key in el) {
+          if (valueType === "boolean" && value === "") {
+            el[key] = true;
+          } else {
+            el[key] = value;
+          }
+        } else {
+          el.setAttribute(key, value);
+        }
       });
 
+    function showSetHTMLProps() {
+      console.log(`current show set html props`);
+    }
     container.appendChild(el);
   }
 

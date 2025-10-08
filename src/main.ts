@@ -15,7 +15,13 @@ const node: VNode = {
       tag: "span",
       props: {id: 'bar'},
       children: "world",
-    },
+    },{
+      tag: "button",
+      props: {
+        disabled: ""
+      },
+      children: "click me"
+    }
   ],
 };
 const app = document.querySelector("#app") as Container;
@@ -24,6 +30,6 @@ const renderer = createRenderer();
 renderer.render(node, app);
 
 // 2秒后清空
-setTimeout(() => {
-  renderer.render(null, app);
-}, 10000);
+// setTimeout(() => {
+//   renderer.render(null, app);
+// }, 10000);
